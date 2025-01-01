@@ -8,4 +8,4 @@ Command Line:
 
 cd .\pizzapoint\
 python3 -m pip install -r .\requirements.txt
-python3 manage.py rrunserver
+python3 manage.py runserver
