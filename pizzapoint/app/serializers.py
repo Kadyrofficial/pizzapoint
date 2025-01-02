@@ -4,22 +4,8 @@ from .models import (User,
                      Banner,
                      Category,
                      Product,
+                     OrderItem,
                      Order)
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username',
-                  'phone_number']
-
-
-class BannerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Banner
-        fields = ('image',
-                  'name_en',
-                  'name_hu')
 
 
 class CatalogueSerializer(serializers.ModelSerializer):
@@ -30,13 +16,12 @@ class CatalogueSerializer(serializers.ModelSerializer):
                   'name_hu')
 
 
-class CatalogueWithImageSerializer(serializers.ModelSerializer):
+class BannerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Category
-        fields = ('id',
+        model = Banner
+        fields = ('image',
                   'name_en',
-                  'name_hu',
-                  'image')
+                  'name_hu')
 
 
 class ProductItemSerializer(serializers.ModelSerializer):
@@ -55,6 +40,25 @@ class ProductItemSerializer(serializers.ModelSerializer):
         if not instance.is_active:
             return None
         return super().to_representation(instance)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username',
+                  'phone_number']
+
+
+class CatalogueWithImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('id',
+                  'name_en',
+                  'name_hu',
+                  'image')
+
+
+
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -104,13 +108,22 @@ class MenuWithoutIdSerializer(serializers.ModelSerializer):
                   'products')
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderItemSerializer(serializers.ModelSerializer):
 
     product = ProductItemSerializer(read_only=True)
 
     class Meta:
-        model = Order
+        model = OrderItem
         fields = ('id',
-                  'product',
                   'quantity',
-                  'total')
+                  'total',
+                  'product',)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+
+    orders = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ('id', 'sum_total', 'orders')

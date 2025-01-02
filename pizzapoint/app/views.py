@@ -12,6 +12,7 @@ from .models import (User,
                      Banner,
                      Category,
                      Product,
+                     OrderItem,
                      Order)
 from .serializers import (UserSerializer,
                           BannerSerializer,
@@ -21,7 +22,78 @@ from .serializers import (UserSerializer,
                           MenuWithoutIdSerializer,
                           ProductItemSerializer,
                           ProductSerializer,
+                          OrderItemSerializer,
                           OrderSerializer)
+
+
+class CatalogueInHeaderViewSet(viewsets.ViewSet):
+
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+
+        catalogue_objects = Category.objects.all().order_by('queue')
+        catalogue_data = CatalogueSerializer(catalogue_objects, many=True).data
+
+        return Response({
+            'catalogue': catalogue_data
+        })
+
+
+class BannerViewSet(viewsets.ViewSet):
+
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+
+        banner_objects = Banner.objects.all().order_by('queue')
+        banner_data = BannerSerializer(banner_objects, many=True).data
+
+        return Response({
+            'banners': banner_data,
+        })
+
+
+class NewProductVuewSet(viewsets.ViewSet):
+
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+    
+        best_objects = Product.objects.filter(is_best = True, is_active = True)
+        best_data = ProductItemSerializer(best_objects, many=True).data
+
+        return Response({
+            'news': best_data,
+        })
+
+
+class DiscountProductVuewSet(viewsets.ViewSet):
+
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+    
+        discout_objects = Product.objects.filter(discount__gt = 0, is_best = False, is_active = True).order_by('-discount')
+        discount_data = ProductItemSerializer(discout_objects, many=True).data
+
+        return Response({
+            'discounts': discount_data,
+        })
+
+
+class MenuViewSet(viewsets.ViewSet):
+
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+
+        menu_objects = Category.objects.all().order_by('queue')
+        menu_data = MenuSerializer(menu_objects, many=True).data
+        
+        return Response({
+            'menu': menu_data
+        })
 
 
 class UserViewSet(viewsets.ViewSet):
@@ -74,45 +146,6 @@ class UserViewSet(viewsets.ViewSet):
         return Response({'message': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
     
 
-class CatalogueInHeaderViewSet(viewsets.ViewSet):
-
-    permission_classes = [AllowAny]
-
-    def list(self, request):
-
-        catalogue_objects = Category.objects.all().order_by('queue')
-
-        catalogue_data = CatalogueSerializer(catalogue_objects, many=True).data
-
-        return Response({
-            'catalogue': catalogue_data
-        })
-
-
-class HomeViewSet(viewsets.ViewSet):
-
-    permission_classes = [AllowAny]
-
-    def list(self, request):
-
-        banner_objects = Banner.objects.all().order_by('queue')
-        menu_objects = Category.objects.all().order_by('queue')
-        best_objects = Product.objects.filter(is_best = True, is_active = True)
-        discout_objects = Product.objects.filter(discount__gt = 0, is_best = False, is_active = True).order_by('-discount')
-
-        banner_data = BannerSerializer(banner_objects, many=True).data
-        menu_data = MenuSerializer(menu_objects, many=True).data
-        best_data = ProductItemSerializer(best_objects, many=True).data
-        discount_data = ProductItemSerializer(discout_objects, many=True).data
-
-        return Response({
-            'banners': banner_data,
-            'bests': best_data,
-            'discounts': discount_data,
-            'menu': menu_data
-        })
-
-
 class CatalogueViewSet(viewsets.ViewSet):
 
     permission_classes = [AllowAny]
@@ -139,14 +172,6 @@ class ProductsViewSet(viewsets.ViewSet):
 
     permission_classes = [AllowAny]
 
-    def list(self, request):
-
-        product_objects = Product.objects.filter(is_active = True)
-
-        product_data = ProductItemSerializer(product_objects, many=True).data
-
-        return Response({'products': product_data,})
-
     @action(methods=['get'], detail=True)
     def product(self, request, pk=None):
         product_objects = Product.objects.get(pk=pk)
@@ -157,50 +182,84 @@ class ProductsViewSet(viewsets.ViewSet):
         })
     
 
-class OrderViewSet(viewsets.ViewSet):
+class OrderItemViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
     
     def list(self, request):
 
-        orders_objects = Order.objects.filter(user=request.user)
+        order_items_objects = OrderItem.objects.filter(user=request.user)
 
-        orders_data = OrderSerializer(orders_objects, many=True).data
+        orders_items_data = OrderItemSerializer(order_items_objects, many=True).data
 
-        return Response({'orders': orders_data})
+        return Response({'order_items': orders_items_data})
     
     @action(methods=['get', 'delete', 'patch', 'post'], detail=True)
-    def order(self, request, pk=None):
+    def order_item(self, request, pk=None):
         
         if request.method in ['GET', 'DELETE', 'PATCH']:
             
             try:
-                order_object = Order.objects.get(pk=pk, user=request.user)
-            except Order.DoesNotExist:
+                order_item_object = OrderItem.objects.get(pk=pk, user=request.user)
+            except OrderItem.DoesNotExist:
                 return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
             
             if request.method == 'GET':
-                order_data = OrderSerializer(order_object).data
-                return Response({'order': order_data})
+                order_item_data = OrderItemSerializer(order_item_object).data
+                return Response({'order_item': order_item_data})
             
             if request.method == 'DELETE':
-                order_object.delete()
-                return Response({'message': 'Order deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+                order_item_object.delete()
+                return Response({'message': 'Order item deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
             
             if request.method == 'PATCH':
-                order_data = OrderSerializer(order_object, data=request.data, partial=True)
-                if order_data.is_valid():
-                    order_data.save()
-                    return Response({'order': order_data.data})
+                order_item_data = OrderItemSerializer(order_item_object, data=request.data, partial=True)
+                if order_item_data.is_valid():
+                    order_item_data.save()
+                    return Response({'order_item': order_item_data.data})
                 
         elif request.method == 'POST':
 
-            serializer = OrderSerializer(data=request.data)
+            serializer = OrderItemSerializer(data=request.data)
 
             if serializer.is_valid():
 
                 serializer.save(user=request.user)
 
-                return Response({'order': serializer.data}, status=status.HTTP_201_CREATED)
+                return Response({'order_item': serializer.data}, status=status.HTTP_201_CREATED)
             
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderViewSet(viewsets.ViewSet):
+
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+
+        orders_objects = Order.objects.filter(user=request.user)
+        orders_data = OrderSerializer(orders_objects, many=True).data
+
+        return Response(orders_data)
+
+
+    
+
+    @action(methods=['get'], detail=True)
+    def order(self, request, pk=None):
+        order_items_objects = OrderItem.objects.all()
+        order_items_data = OrderItemSerializer(order_items_objects, many=True).data
+        return Response(order_items_data)
+    
+    @action(methods=['get'], detail=True, url_path='order-items/(?P<item_pk>\d+)')
+    def order_item(self, request, pk=None, item_pk=None):
+        try:
+            order = Order.objects.get(pk=pk, user=request.user)
+            order_item = order.orders.get(pk=item_pk)  # Access related order items
+        except Order.DoesNotExist:
+            return Response({"detail": "Order not found."}, status=404)
+        except OrderItem.DoesNotExist:
+            return Response({"detail": "Order item not found."}, status=404)
+
+        order_item_data = OrderItemSerializer(order_item).data
+        return Response(order_item_data)

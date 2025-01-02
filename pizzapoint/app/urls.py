@@ -6,21 +6,28 @@ from rest_framework_simplejwt.views import (
 )
 
 from .views import (CatalogueInHeaderViewSet,
-                    HomeViewSet,
+                    BannerViewSet,
+                    NewProductVuewSet,
+                    DiscountProductVuewSet,
+                    MenuViewSet,
                     UserViewSet,
                     CatalogueViewSet,
                     ProductsViewSet,
-                    OrderViewSet,)
+                    OrderItemViewSet,
+                    OrderViewSet)
 
 
 router = routers.DefaultRouter()
 router.register(r'catalogue_in_header', CatalogueInHeaderViewSet, basename='catalogue_in_header')
-router.register(r'home', HomeViewSet, basename='home')
+router.register(r'banner', BannerViewSet, basename='banner')
+router.register(r'new_product', NewProductVuewSet, basename='new_product')
+router.register(r'discount_product', DiscountProductVuewSet, basename='discount_product')
+router.register(r'menu', MenuViewSet, basename='menu')
 router.register(r'user', UserViewSet, basename='user')
 router.register(r'catalogue', CatalogueViewSet, basename='catalogue')
 router.register(r'products', ProductsViewSet, basename='products')
+router.register(r'order_items', OrderItemViewSet, basename='order_items')
 router.register(r'orders', OrderViewSet, basename='orders')
-
 
 urlpatterns = [
 

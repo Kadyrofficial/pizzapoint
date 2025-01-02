@@ -1,5 +1,6 @@
 import random
 import string
+from django.db.models import Sum
 from django.contrib.auth.models import (AbstractUser,
                                         User)
 from django.db import models
@@ -70,7 +71,9 @@ class Product(models.Model):
         return self.name_en
 
 
-class Order(models.Model):
+
+
+class OrderItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product')
     created_at = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -80,6 +83,22 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         result = self.quantity * self.product.new_price
         self.total = Decimal(result).quantize(Decimal('0.1'))
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.user.username
+    
+
+class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now=True, auto_now_add=False)
+    sum_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    orders = models.ManyToManyField(OrderItem, related_name='orders', null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Calculate the sum of the total prices of all related OrderItem instances
+        total_sum = sum(item.total for item in self.orders.all())
+        self.sum_total = Decimal(total_sum).quantize(Decimal('0.1'))
         super().save(*args, **kwargs)
 
     def __str__(self):
