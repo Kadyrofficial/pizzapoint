@@ -94,7 +94,7 @@ class OrderItem(models.Model):
     created_at = models.DateTimeField(auto_now=True, auto_now_add=False)
     quantity = models.PositiveIntegerField(validators=[MaxValueValidator(100)])
     total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, editable=False)
-    status = models.CharField(max_length=50, choices=Status, default=Status.PENDING, editable=False)
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING, editable=False)
 
     def save(self, *args, **kwargs):
         result = self.quantity * self.product.new_price
@@ -130,7 +130,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now=True, auto_now_add=False)
     sum_total = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
     order_items = models.ManyToManyField(OrderItem, related_name='order_items', through='OrderItemRelation', blank=True, editable=False)
-    status = models.CharField(max_length=50, choices=Status, default=Status.ACTIVE)
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.ACTIVE)
 
 
 
