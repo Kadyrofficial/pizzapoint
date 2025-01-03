@@ -45,7 +45,7 @@ class CatalogueInHeaderViewSet(viewsets.ViewSet):
 
 class BannerViewSet(viewsets.ViewSet):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def list(self, request):
 
