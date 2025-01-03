@@ -11,30 +11,30 @@ from .models import (User,
 class CatalogueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('id',
+        fields = ['id',
                   'name_en',
-                  'name_hu')
+                  'name_hu']
 
 
 class BannerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Banner
-        fields = ('image',
+        fields = ['image',
                   'name_en',
-                  'name_hu')
+                  'name_hu']
 
 
 class ProductItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('id',
+        fields = ['id',
                   'name_en',
                   'name_en',
                   'thumbnail',
                   'is_best',
                   'price',
                   'discount',
-                  'new_price')
+                  'new_price']
 
     def to_representation(self, instance):
         if not instance.is_active:
@@ -52,20 +52,17 @@ class UserSerializer(serializers.ModelSerializer):
 class CatalogueWithImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('id',
+        fields = ['id',
                   'name_en',
                   'name_hu',
-                  'image')
-
-
-
+                  'image']
 
 
 class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id',
+        fields = ['id',
                   'name_en',
                   'name_hu',
                   'description_en',
@@ -74,7 +71,7 @@ class ProductSerializer(serializers.ModelSerializer):
                   'is_best',
                   'price',
                   'discount',
-                  'new_price')
+                  'new_price']
 
     def to_representation(self, instance):
 
@@ -90,10 +87,10 @@ class MenuSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id',
+        fields = ['id',
                   'name_en',
                   'name_hu',
-                  'products')
+                  'products']
 
 
 class MenuWithoutIdSerializer(serializers.ModelSerializer):
@@ -102,10 +99,10 @@ class MenuWithoutIdSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('name_en',
+        fields = ['name_en',
                   'name_hu',
                   'image',
-                  'products')
+                  'products']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -114,16 +111,44 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ('id',
+        fields = ['id',
                   'quantity',
                   'total',
-                  'product',)
+                  'product',]
+
+
+class CreateOrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['user',
+                  'quantity',
+                  'product',]
 
 
 class OrderSerializer(serializers.ModelSerializer):
-
-    orders = OrderItemSerializer(many=True)
+    order_items = OrderItemSerializer(many=True)
 
     class Meta:
         model = Order
-        fields = ('id', 'sum_total', 'orders')
+        fields = ['id', 'sum_total', 'status', 'order_items']
+
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = []
+
+
+class OrderStatusSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Order
+        fields = ['status']
+
+    def update(self, instance, validated_data):
+        if instance.status in [Order.Status.CANCELED, Order.Status.COMPLETED]:
+            if 'status' in validated_data:
+                raise serializers.ValidationError("Status cannot be changed once it is Canceled or Completed.")
+        
+        # Proceed with updating the order instance
+        return super().update(instance, validated_data)

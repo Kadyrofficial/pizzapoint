@@ -23,7 +23,10 @@ from .serializers import (UserSerializer,
                           ProductItemSerializer,
                           ProductSerializer,
                           OrderItemSerializer,
-                          OrderSerializer)
+                          CreateOrderItemSerializer,
+                          OrderSerializer,
+                          CreateOrderSerializer,
+                          OrderStatusSerializer)
 
 
 class CatalogueInHeaderViewSet(viewsets.ViewSet):
@@ -42,7 +45,7 @@ class CatalogueInHeaderViewSet(viewsets.ViewSet):
 
 class BannerViewSet(viewsets.ViewSet):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
 
@@ -188,47 +191,45 @@ class OrderItemViewSet(viewsets.ViewSet):
     
     def list(self, request):
 
-        order_items_objects = OrderItem.objects.filter(user=request.user)
+        order_items_objects = OrderItem.objects.filter(user=request.user, status__in=[OrderItem.Status.PENDING])
 
         orders_items_data = OrderItemSerializer(order_items_objects, many=True).data
 
         return Response({'order_items': orders_items_data})
     
-    @action(methods=['get', 'delete', 'patch', 'post'], detail=True)
+    def create(self, request):
+
+        serializer = CreateOrderItemSerializer(data=request.data)
+
+        if serializer.is_valid():
+
+            serializer.save(user=request.user)
+
+            return Response({'order_item': serializer.data}, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['get', 'delete', 'patch'], detail=True)
     def order_item(self, request, pk=None):
-        
-        if request.method in ['GET', 'DELETE', 'PATCH']:
-            
-            try:
-                order_item_object = OrderItem.objects.get(pk=pk, user=request.user)
-            except OrderItem.DoesNotExist:
-                return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-            if request.method == 'GET':
-                order_item_data = OrderItemSerializer(order_item_object).data
-                return Response({'order_item': order_item_data})
-            
-            if request.method == 'DELETE':
-                order_item_object.delete()
-                return Response({'message': 'Order item deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-            
-            if request.method == 'PATCH':
-                order_item_data = OrderItemSerializer(order_item_object, data=request.data, partial=True)
-                if order_item_data.is_valid():
-                    order_item_data.save()
-                    return Response({'order_item': order_item_data.data})
-                
-        elif request.method == 'POST':
 
-            serializer = OrderItemSerializer(data=request.data)
-
-            if serializer.is_valid():
-
-                serializer.save(user=request.user)
-
-                return Response({'order_item': serializer.data}, status=status.HTTP_201_CREATED)
+        try:
+            order_item_object = OrderItem.objects.get(pk=pk, user=request.user)
+        except OrderItem.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
             
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'GET':
+            order_item_data = OrderItemSerializer(order_item_object).data
+            return Response({'order_item': order_item_data})
+            
+        if request.method == 'DELETE':
+            order_item_object.delete()
+            return Response({'message': 'Order item deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            
+        if request.method == 'PATCH':
+            order_item_data = OrderItemSerializer(order_item_object, data=request.data, partial=True)
+            if order_item_data.is_valid():
+                order_item_data.save()
+                return Response({'order_item': order_item_data.data})
 
 
 class OrderViewSet(viewsets.ViewSet):
@@ -237,29 +238,64 @@ class OrderViewSet(viewsets.ViewSet):
 
     def list(self, request):
 
-        orders_objects = Order.objects.filter(user=request.user)
+        orders_objects = Order.objects.filter(user=request.user, status__in=[Order.Status.ACTIVE, Order.Status.COMPLETED])
         orders_data = OrderSerializer(orders_objects, many=True).data
 
-        return Response(orders_data)
+        return Response({'orders': orders_data})
+    
+    def create(self, request):
 
+        serializer = CreateOrderSerializer(data=request.data)
+
+        if serializer.is_valid():
+
+            serializer.save(user=request.user)
+
+            return Response({'message': 'Order successfully'}, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     
 
-    @action(methods=['get'], detail=True)
+
+class ActiveOrderViewSet(viewsets.ViewSet):
+
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+
+        active_orders_objects = Order.objects.filter(user=request.user, status__in=[Order.Status.ACTIVE])
+        active_orders_data = OrderSerializer(active_orders_objects, many=True).data
+
+        return Response({'active_orders': active_orders_data})
+    
+    @action(methods=['get', 'patch'], detail=True, url_path='order')
+
     def order(self, request, pk=None):
-        order_items_objects = OrderItem.objects.all()
-        order_items_data = OrderItemSerializer(order_items_objects, many=True).data
-        return Response(order_items_data)
-    
-    @action(methods=['get'], detail=True, url_path='order-items/(?P<item_pk>\d+)')
-    def order_item(self, request, pk=None, item_pk=None):
-        try:
-            order = Order.objects.get(pk=pk, user=request.user)
-            order_item = order.orders.get(pk=item_pk)  # Access related order items
-        except Order.DoesNotExist:
-            return Response({"detail": "Order not found."}, status=404)
-        except OrderItem.DoesNotExist:
-            return Response({"detail": "Order item not found."}, status=404)
+        active_orders_objects = Order.objects.get(pk=pk, user=request.user, status__in=[Order.Status.ACTIVE])
+        
+        if request.method == 'GET':
 
-        order_item_data = OrderItemSerializer(order_item).data
-        return Response(order_item_data)
+            order_data = OrderSerializer(active_orders_objects).data
+
+            return Response({'order': order_data})
+        
+        elif request.method == 'PATCH':
+                
+            serializer = OrderStatusSerializer(active_orders_objects, data=request.data, partial=True)
+            order_data = OrderSerializer(active_orders_objects).data
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Status updated successfully', 'order': order_data})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+class CompletedOrderViewSet(viewsets.ViewSet):
+
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+
+        completed_orders_objects = Order.objects.filter(user=request.user, status__in=[Order.Status.COMPLETED])
+        completed_orders_data = OrderSerializer(completed_orders_objects, many=True).data
+
+        return Response({'completed_orders': completed_orders_data})

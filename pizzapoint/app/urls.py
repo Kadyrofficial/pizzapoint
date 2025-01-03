@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.contrib.auth import views as auth_views
 
 from .views import (CatalogueInHeaderViewSet,
                     BannerViewSet,
@@ -14,7 +15,9 @@ from .views import (CatalogueInHeaderViewSet,
                     CatalogueViewSet,
                     ProductsViewSet,
                     OrderItemViewSet,
-                    OrderViewSet)
+                    OrderViewSet,
+                    ActiveOrderViewSet,
+                    CompletedOrderViewSet)
 
 
 router = routers.DefaultRouter()
@@ -28,6 +31,8 @@ router.register(r'catalogue', CatalogueViewSet, basename='catalogue')
 router.register(r'products', ProductsViewSet, basename='products')
 router.register(r'order_items', OrderItemViewSet, basename='order_items')
 router.register(r'orders', OrderViewSet, basename='orders')
+router.register(r'active_orders', ActiveOrderViewSet, basename='active_orders')
+router.register(r'completed_orders', CompletedOrderViewSet, basename='completed_orders')
 
 urlpatterns = [
 
@@ -35,5 +40,6 @@ urlpatterns = [
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
     
 ]
