@@ -16,22 +16,22 @@ from threading import local
 
 
 class User(AbstractUser):
-    phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=15,
+                                    unique=True,
+                                    null=True,
+                                    blank=True)
     is_phone_verified = models.BooleanField(default=False)
-    password = models.CharField(max_length=255, blank=True)
+    password = models.CharField(max_length=255,
+                                blank=True)
 
     def generate_random_password(self, length=12):
-
         characters = string.ascii_letters + string.digits
         password = ''.join(random.choice(characters) for _ in range(length))
         return password
-
     def save(self, *args, **kwargs):
         if not self.password:
             self.password = self.generate_random_password()
-
         super().save(*args, **kwargs)
-
     def __str__(self):
         return self.username
 
