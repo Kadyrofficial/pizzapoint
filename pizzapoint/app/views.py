@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import (IsAuthenticated,
                                         AllowAny)
+from rest_framework.pagination import PageNumberPagination
 
 from .utils import (send_verification_code,
                     verify_code)
@@ -46,7 +47,7 @@ class CatalogueInHeaderViewSet(viewsets.ViewSet):
 class BannerViewSet(viewsets.ViewSet):
 
     permission_classes = [AllowAny]
-
+    from rest_framework.pagination import PageNumberPagination
     def list(self, request):
 
         banner_objects = Banner.objects.all().order_by('queue')
@@ -57,15 +58,24 @@ class BannerViewSet(viewsets.ViewSet):
         })
 
 
+class NewDiscountProductPagination(PageNumberPagination):
+    page_size = 4
+    page_size_query_param = 'page_size'
+
+
 class NewProductVuewSet(viewsets.ViewSet):
 
     permission_classes = [AllowAny]
 
     def list(self, request):
-    
-        best_objects = Product.objects.filter(is_best = True, is_active = True)
-        best_data = ProductItemSerializer(best_objects, many=True).data
 
+        best_objects = Product.objects.filter(is_best = True, is_active = True).order_by('?')
+        paginator = NewDiscountProductPagination()
+        paginated_best_objects = paginator.paginate_queryset(best_objects, request) 
+
+        
+        best_data = ProductItemSerializer(paginated_best_objects, many=True).data
+        
         return Response({
             'news': best_data,
         })
@@ -77,8 +87,11 @@ class DiscountProductVuewSet(viewsets.ViewSet):
 
     def list(self, request):
     
-        discout_objects = Product.objects.filter(discount__gt = 0, is_best = False, is_active = True).order_by('-discount')
-        discount_data = ProductItemSerializer(discout_objects, many=True).data
+        discout_objects = Product.objects.filter(discount__gt = 0, is_active = True).order_by('?')
+        paginator = NewDiscountProductPagination()
+        paginated_discount_data = paginator.paginate_queryset(discout_objects, request) 
+
+        discount_data = ProductItemSerializer(paginated_discount_data, many=True).data
 
         return Response({
             'discounts': discount_data,
