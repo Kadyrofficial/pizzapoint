@@ -29,7 +29,7 @@ class ProductItemSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id',
                   'name_en',
-                  'name_en',
+                  'name_hu',
                   'thumbnail',
                   'is_best',
                   'price',
